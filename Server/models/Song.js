@@ -1,18 +1,16 @@
-import mongoose from "mongoose"
+import mongoose from "mongoose";
 
 const songSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    desc: { type: String },
-    album: { type: mongoose.Schema.Types.ObjectId, ref: "Album" },
-    image: { type: String },
-    audioUrl: { type: String },
-    duration: { type: Number },
+    title: { type: String, required: true },
     artist: { type: String },
-    jamendoId: { type: Number },
-    license: { type: String }
+    album: { type: mongoose.Schema.Types.ObjectId, ref: "Album", required: true },
+    genre: { type: String, default: "Unknown" },
+    coverUrl: { type: String },
+    duration: { type: Number },
+    audioUrl: { type: String, required: true }
   },
   { timestamps: true }
-)
+);
 
-export const Song = mongoose.model("Song", songSchema)
+export const Song = mongoose.model("Song", songSchema);

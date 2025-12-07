@@ -7,7 +7,6 @@ const albumSchema = new mongoose.Schema(
     year: { type: Number },
     genre: { type: String },
     coverUrl: { type: String },
-    jamendoId: { type: Number },
     songs: [
       {
         type: mongoose.Schema.Types.ObjectId,

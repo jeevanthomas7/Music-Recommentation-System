@@ -1,91 +1,86 @@
-import mongoose from "mongoose"
-import axios from "axios"
-import dotenv from "dotenv"
-import Album from "../models/Album.js";
-import Song from "../models/Song.js";
+import mongoose from "mongoose";
+import axios from "axios";
+import dotenv from "dotenv";
+import {Album} from "../models/Album.js";
+import {Song} from "../models/Song.js";
 
-const JAMENDO_BASE_URL = "https://api.jamendo.com/v3.0";
+dotenv.config();
 
-export const importFromJamendo = async (req, res) => {
+const MONGODB_URI = "mongodb://127.0.0.1:27017/spotifyclone";
+const JAMENDO_CLIENT_ID = "c320be5d";
+
+async function connectDB() {
+  await mongoose.connect(MONGODB_URI);
+}
+
+async function fetchJamendoAlbums(limit = 10) {
+  const url = "https://api.jamendo.com/v3.0/albums/tracks";
+  const res = await axios.get(url, {
+    params: {
+      client_id: JAMENDO_CLIENT_ID,
+      format: "json",
+      limit,
+      include: "musicinfo",
+      imagesize: 600,
+      audioformat: "mp31",
+      audiodlformat: "mp31",
+      streaming: true,
+      order: "popularity_total_desc"
+    }
+  });
+  return res.data.results;
+}
+
+async function seedJamendo() {
   try {
-    const clientId = process.env.JAMENDO_CLIENT_ID;
+    await connectDB();
 
-    const { data } = await axios.get(
-      `${JAMENDO_BASE_URL}/albums/tracks`,
-      {
-        params: {
-          client_id: clientId,
-          format: "json",
-          limit: 10,
-          audioformat: "mp32",
-          imagesize: 300,
-          include: "musicinfo",     // ⇦ important for genre
-          order: "popularity_total_desc"
-        }
-      }
-    );
-
-    const albumsFromApi = data.results || [];
-
-    await Album.deleteMany();
     await Song.deleteMany();
+    await Album.deleteMany();
 
-    const albumsToInsert = albumsFromApi.map(a => ({
-      title: a.name,
-      artist: a.artist_name,
-      year: a.releasedate ? Number(a.releasedate.slice(0, 4)) : undefined,
-      genre: a.musicinfo?.tags?.genres?.length ? a.musicinfo.tags.genres[0].name : "",
-      coverUrl: a.image
-    }));
+    const albums = await fetchJamendoAlbums(10);
+    let totalSongs = 0;
 
-    const insertedAlbums = await Album.insertMany(albumsToInsert);
+    for (const a of albums) {
+      const albumGenre = a.musicinfo?.tags?.genres?.[0]?.name || "Unknown";
 
-    const albumIdMap = {};
-    albumsFromApi.forEach((a, index) => {
-      albumIdMap[a.id] = insertedAlbums[index]._id;
-    });
+      const albumDoc = await Album.create({
+        title: a.name,
+        artist: a.artist_name,
+        year: a.releasedate ? new Date(a.releasedate).getFullYear() : undefined,
+        genre: albumGenre,
+        coverUrl: a.image
+      });
 
-    const songsToInsert = [];
+      for (const t of a.tracks || []) {
+        const songGenre = t.musicinfo?.tags?.genres?.[0]?.name || albumGenre;
+        const audioUrl = t.audio || t.audiodl || "";
 
-    albumsFromApi.forEach(a => {
-      const albumMongoId = albumIdMap[a.id];
-
-      if (Array.isArray(a.tracks)) {
-        a.tracks.forEach(t => {
-          songsToInsert.push({
-            title: t.name,
-            artist: a.artist_name,
-            album: albumMongoId,
-            genre: t.musicinfo?.tags?.genres?.length ? t.musicinfo.tags.genres[0].name : "",
-            duration: Number(t.duration),
-            audioUrl: t.audio,
-            coverUrl: a.image
-          });
+        const songDoc = await Song.create({
+          title: t.name,
+          artist: a.artist_name,
+          album: albumDoc._id,
+          genre: songGenre,
+          coverUrl: a.image,
+          duration: Number(t.duration),
+          audioUrl
         });
+
+        albumDoc.songs.push(songDoc._id);
+        totalSongs++;
       }
-    });
 
-    const insertedSongs = await Song.insertMany(songsToInsert);
+      await albumDoc.save();
+    }
 
-    const albumSongMap = {};
-    insertedSongs.forEach(song => {
-      const key = song.album.toString();
-      if (!albumSongMap[key]) albumSongMap[key] = [];
-      albumSongMap[key].push(song._id);
-    });
+    console.log("Imported Albums:", albums.length);
+    console.log("Imported Songs:", totalSongs);
 
-    await Promise.all(
-      Object.entries(albumSongMap).map(([id, songs]) =>
-        Album.findByIdAndUpdate(id, { $set: { songs } })
-      )
-    );
-
-    res.status(200).json({
-      message: "imported from jamendo with genre",
-      albums: insertedAlbums.length,
-      songs: insertedSongs.length
-    });
-  } catch (error) {
-    res.status(500).json({ message: "jamendo import failed" });
+    await mongoose.disconnect();
+  } catch (e) {
+    console.log("Error:", e.message);
+    await mongoose.disconnect();
   }
-};
+}
+
+seedJamendo();
