@@ -38,7 +38,7 @@ async function seedJamendo() {
     await Song.deleteMany();
     await Album.deleteMany();
 
-    const albums = await fetchJamendoAlbums(10);
+    const albums = await fetchJamendoAlbums(200);
     let totalSongs = 0;
 
     for (const a of albums) {
