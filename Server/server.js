@@ -1,15 +1,28 @@
-const express=require('express');
-const { connectDB } = require('./config/db');
-const app=express();
-require('dotenv').config()
-const port=process.env.port ||4000
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import { connectDB } from "./config/db.js";
+import albumRoutes from "./routes/albumRoutes.js";
+import songRoutes from "./routes/songRoutes.js";
 
-connectDB()
-app.get('/',(req,res)=>{
-    res.send("WELCOME TO HOMEPAGE")
-})
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+connectDB();
+
+app.use(cors());
+app.use(express.json());
+
+app.get("/", (req, res) => {
+  res.send("WELCOME TO HOMEPAGE");
+});
+
+app.use("/api/albums", albumRoutes);
+app.use("/api/songs", songRoutes);
 
 
-app.listen(port,()=>{
-    console.log(`http://localhost:${port}`)
-})
+app.listen(PORT, () => {
+  console.log(`http://localhost:${PORT}`);
+});

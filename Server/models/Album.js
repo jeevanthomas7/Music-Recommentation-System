@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from "mongoose"
 
 const albumSchema = new mongoose.Schema(
   {
@@ -7,16 +7,15 @@ const albumSchema = new mongoose.Schema(
     year: { type: Number },
     genre: { type: String },
     coverUrl: { type: String },
+    jamendoId: { type: Number },
     songs: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Song",
-      },
-    ],
+        ref: "Song"
+      }
+    ]
   },
   { timestamps: true }
-);
+)
 
-const Album = mongoose.model("Album", albumSchema);
-
-export default Album;
+export const Album = mongoose.model("Album", albumSchema)
