@@ -2,11 +2,13 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import { connectDB } from "./config/db.js";
-import cloudinary from "./config/cloudinary.js";
+// import cloudinary from "./config/cloudinary.js";
 import albumRoutes from "./routes/albumRoutes.js";
 import songRoutes from "./routes/songRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoute.js";
+import paymentRoutes from "./routes/paymentRoute.js";
+
 
 dotenv.config();
 
@@ -26,6 +28,8 @@ app.use("/api/albums", albumRoutes);
 app.use("/api/songs", songRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes)
+app.use("/api/payment", paymentRoutes);
+
 
 
 
