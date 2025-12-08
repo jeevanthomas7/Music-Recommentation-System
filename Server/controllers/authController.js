@@ -17,10 +17,12 @@ function createToken(user) {
 
 export const googleAuth = async (req, res) => {
   try {
-    console.log("REQ BODY:", req.body); // check what arrives
+    console.log("REQ BODY:", req.body);
 
     const { credential } = req.body;
-    if (!credential) return res.status(400).json({ message: "missing token" });
+    if (!credential) {
+      return res.status(400).json({ message: "missing token" });
+    }
 
     const ticket = await client.verifyIdToken({
       idToken: credential,
@@ -29,20 +31,31 @@ export const googleAuth = async (req, res) => {
 
     const payload = ticket.getPayload();
 
-    let user = await User.findOne({ googleId: payload.sub }) || await User.findOne({ email: payload.email });
+    // ---------- ADMIN EMAIL CHECK ----------
+    const email = (payload.email || "").trim().toLowerCase();
+    const adminEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+    const isAdmin = email && adminEmail && email === adminEmail;
 
-    if (!user) {
-      user = await User.create({
+    console.log("PAYLOAD EMAIL:", email);
+    console.log("ADMIN EMAIL:", adminEmail);
+    console.log("MATCH RESULT (isAdmin):", isAdmin);
+
+    // use email as key, and always update role based on isAdmin
+    const user = await User.findOneAndUpdate(
+      { email }, // find by email
+      {
         name: payload.name,
-        email: payload.email,
+        email,
         googleId: payload.sub,
         avatar: payload.picture,
-      });
-    }
+        role: isAdmin ? "admin" : "user",
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
 
     const token = createToken(user);
 
-    res.json({
+    return res.json({
       token,
       user: {
         id: user._id,
@@ -54,6 +67,6 @@ export const googleAuth = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "auth failed" });
+    return res.status(500).json({ message: "auth failed" });
   }
 };
