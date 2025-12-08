@@ -7,7 +7,7 @@ import {Song} from "../models/Song.js";
 dotenv.config();
 
 const MONGODB_URI = "mongodb://127.0.0.1:27017/spotifyclone";
-const JAMENDO_CLIENT_ID = "c320be5d";
+const JAMENDO_CLIENT_ID = process.env.JAMENDO_CLIENT_ID;
 
 async function connectDB() {
   await mongoose.connect(MONGODB_URI);

@@ -4,6 +4,7 @@ import cors from "cors";
 import { connectDB } from "./config/db.js";
 import albumRoutes from "./routes/albumRoutes.js";
 import songRoutes from "./routes/songRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/albums", albumRoutes);
 app.use("/api/songs", songRoutes);
+app.use("/api/auth", authRoutes);
 
 
 app.listen(PORT, () => {
