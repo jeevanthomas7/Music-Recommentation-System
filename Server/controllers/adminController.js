@@ -126,6 +126,48 @@ export const deleteSong = async (req, res, next) => {
     next(error)
   }
 }
+export const updateSong = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { title, artist, albumId, genre, duration } = req.body;
+
+    const song = await Song.findById(id);
+    if (!song) return res.status(404).json({ message: "Song not found" });
+
+    let audioUrl = song.audioUrl;
+    let coverUrl = song.coverUrl;
+
+    if (req.files?.audioFile) {
+      audioUrl = await uploadToCloudinary(req.files.audioFile);
+    }
+
+    if (req.files?.imageFile) {
+      coverUrl = await uploadToCloudinary(req.files.imageFile);
+    }
+
+    if (albumId && albumId !== song.album?.toString()) {
+      if (song.album) {
+        await Album.findByIdAndUpdate(song.album, { $pull: { songs: song._id } });
+      }
+      await Album.findByIdAndUpdate(albumId, { $push: { songs: song._id } });
+    }
+
+    song.title = title ?? song.title;
+    song.artist = artist ?? song.artist;
+    song.album = albumId ?? song.album;
+    song.genre = genre ?? song.genre;
+    song.duration = duration ?? song.duration;
+    song.audioUrl = audioUrl;
+    song.coverUrl = coverUrl;
+
+    await song.save();
+
+    res.status(200).json(song);
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 export const createAlbum = async (req, res, next) => {
   try {
@@ -171,6 +213,35 @@ export const deleteAlbum = async (req, res, next) => {
     next(error)
   }
 }
+
+export const updateAlbum = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { title, artist, year, genre } = req.body;
+
+    const album = await Album.findById(id);
+    if (!album) return res.status(404).json({ message: "Album not found" });
+
+    let coverUrl = album.coverUrl;
+
+    if (req.files?.imageFile) {
+      coverUrl = await uploadToCloudinary(req.files.imageFile);
+    }
+
+    album.title = title ?? album.title;
+    album.artist = artist ?? album.artist;
+    album.year = year ?? album.year;
+    album.genre = genre ?? album.genre;
+    album.coverUrl = coverUrl;
+
+    await album.save();
+
+    res.status(200).json(album);
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 export const checkAdmin = async (req, res, next) => {
   try {
