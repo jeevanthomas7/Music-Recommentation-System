@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import { connectDB } from "./config/db.js";
 // import cloudinary from "./config/cloudinary.js";
@@ -10,6 +11,7 @@ import adminRoutes from "./routes/adminRoute.js";
 import paymentRoutes from "./routes/paymentRoute.js";
 import favoriteRoutes from "./routes/favoriteRoutes.js";
 import playlistRoutes from "./routes/playlistRoutes.js";
+import searchRoutes from "./routes/searchRoute.js";
 
 
 dotenv.config();
@@ -19,8 +21,18 @@ const PORT = process.env.PORT || 3000;
 
 connectDB();
 
-app.use(cors());
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
+
+app.use(
+  cors({
+    origin: FRONTEND_ORIGIN,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
 
 app.get("/", (req, res) => {
   res.send("WELCOME TO HOMEPAGE");
@@ -30,9 +42,10 @@ app.use("/api/albums", albumRoutes);
 app.use("/api/songs", songRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes)
-app.use("/api/payment", paymentRoutes);
+app.use("/api/payments", paymentRoutes);
 app.use("/api/favorites", favoriteRoutes);
 app.use("/api/playlists", playlistRoutes);
+app.use("/api/search", searchRoutes);
 
 
 

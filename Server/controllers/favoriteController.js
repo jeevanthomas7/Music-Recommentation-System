@@ -5,15 +5,22 @@ export const addToFavorites = async (req, res) => {
   try {
     const { userId, songId } = req.body;
 
+    if (!userId || !songId) {
+      return res.status(400).json({ message: "userId and songId required" });
+    }
+
     const exists = await Favorite.findOne({ userId, songId });
-    if (exists) return res.status(400).json({ message: "Already in favorites" });
+    if (exists) {
+      return res.status(200).json(exists);
+    }
 
     const fav = await Favorite.create({ userId, songId });
     res.status(201).json(fav);
-  } catch {
+  } catch (e) {
     res.status(500).json({ message: "Failed to add favorite" });
   }
 };
+
 
 export const removeFromFavorites = async (req, res) => {
   try {
