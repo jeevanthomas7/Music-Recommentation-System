@@ -5,19 +5,22 @@ import { getEmotionRecommendations } from "../api/emotionService";
 export default function EmotionDetector({ onSongs }) {
   const videoRef = useRef(null);
   const intervalRef = useRef(null);
+  const streamRef = useRef(null);
 
   const [emotion, setEmotion] = useState("Waiting...");
   const [status, setStatus] = useState("Starting camera...");
+  const [cameraOn, setCameraOn] = useState(true);
 
   useEffect(() => {
     const init = async () => {
       try {
-        // Camera
+      
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        streamRef.current = stream;
         videoRef.current.srcObject = stream;
-        await new Promise(r => videoRef.current.onloadedmetadata = r);
 
-        // Models
+        await new Promise(r => (videoRef.current.onloadedmetadata = r));
+
         setStatus("Loading AI models...");
         const MODEL_URL = "/models";
         await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
@@ -27,15 +30,46 @@ export default function EmotionDetector({ onSongs }) {
         intervalRef.current = setInterval(detectEmotion, 5000);
       } catch (err) {
         console.error(err);
-        setStatus("ERROR: " + err.message);
+        setStatus("Camera permission denied");
       }
     };
 
     init();
-    return () => clearInterval(intervalRef.current);
+
+    const stopOnBack = () => stopCamera();
+    window.addEventListener("STOP_CAMERA", stopOnBack);
+
+    return () => {
+      window.removeEventListener("STOP_CAMERA", stopOnBack);
+      stopCamera();
+    };
   }, []);
 
+  
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    setCameraOn(false);
+    setStatus("Camera OFF");
+  };
+
+  
+  const startCamera = async () => {
+    if (cameraOn) return;
+
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    streamRef.current = stream;
+    videoRef.current.srcObject = stream;
+
+    setCameraOn(true);
+    setStatus("Camera ON");
+  };
+
   const detectEmotion = async () => {
+    if (!videoRef.current || !cameraOn) return;
+
     const detection = await faceapi
       .detectSingleFace(videoRef.current)
       .withFaceExpressions();
@@ -57,20 +91,47 @@ export default function EmotionDetector({ onSongs }) {
   };
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <p className="text-sm opacity-70">{status}</p>
+    <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center gap-4 w-full max-w-md mx-auto">
+      
+      <h2 className="text-lg font-semibold text-gray-800">
+        Live Camera
+      </h2>
 
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        playsInline
-        className="w-72 rounded-xl border border-gray-700"
-      />
+      <p className="text-sm text-gray-500">{status}</p>
 
-      <p className="text-lg font-semibold">
-        Emotion: <span className="text-green-400">{emotion}</span>
+      <div className="w-full aspect-video bg-black rounded-xl overflow-hidden border">
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      <p className="text-base font-medium">
+        Emotion:
+        <span className="ml-2 text-green-600 font-semibold">
+          {emotion}
+        </span>
       </p>
+
+   
+      {!cameraOn ? (
+        <button
+          onClick={startCamera}
+          className="w-full py-2 rounded-lg bg-green-600 text-white font-medium"
+        >
+          Turn Camera ON
+        </button>
+      ) : (
+        <button
+          onClick={stopCamera}
+          className="w-full py-2 rounded-lg bg-red-600 text-white font-medium"
+        >
+          Turn Camera OFF
+        </button>
+      )}
     </div>
   );
 }

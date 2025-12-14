@@ -1,158 +1,166 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import API from "../../api/api";
+import StatCard from "../components/StatCard";
 import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
-  CartesianGrid,
-  Legend
+  ResponsiveContainer,
+  CartesianGrid
 } from "recharts";
 
 export default function Dashboard() {
   const [users, setUsers] = useState([]);
-  const [premiumUsers, setPremiumUsers] = useState([]);
-  const [filter, setFilter] = useState("all");
+  const [payments, setPayments] = useState([]);
 
   useEffect(() => {
-    API.get("/admin/users").then(res => setUsers(res.data));
-    API.get("/admin/premium-users").then(res => setPremiumUsers(res.data));
+    API.get("/admin/users").then(r => setUsers(r.data));
+    API.get("/payments/all").then(r => setPayments(r.data.payments));
   }, []);
 
-  const chartData = useMemo(() => {
-    const map = {};
+  const totalRevenue = payments.reduce(
+    (s, p) => s + (p.amount || 0),
+    0
+  );
 
-    users.forEach(u => {
-      const key = new Date(u.createdAt).toLocaleString("default", {
-        month: "short",
-        year: "numeric"
-      });
-      if (!map[key]) map[key] = { month: key, users: 0, premium: 0 };
-      map[key].users++;
+  const premiumUsers = users.filter(u => u.isPremium).length;
+
+  const revenueByMonth = {};
+  payments.forEach(p => {
+    const m = new Date(p.createdAt).toLocaleString("default", {
+      month: "short"
     });
+    revenueByMonth[m] = (revenueByMonth[m] || 0) + p.amount;
+  });
 
-    premiumUsers.forEach(p => {
-      const key = new Date(p.createdAt).toLocaleString("default", {
-        month: "short",
-        year: "numeric"
-      });
-      if (!map[key]) map[key] = { month: key, users: 0, premium: 0 };
-      map[key].premium++;
+  const revenueData = Object.keys(revenueByMonth).map(m => ({
+    month: m,
+    revenue: revenueByMonth[m]
+  }));
+
+  const usersByMonth = {};
+  users.forEach(u => {
+    const m = new Date(u.createdAt).toLocaleString("default", {
+      month: "short"
     });
+    usersByMonth[m] = (usersByMonth[m] || 0) + 1;
+  });
 
-    return Object.values(map);
-  }, [users, premiumUsers]);
-
-  const filteredUsers = useMemo(() => {
-    if (filter === "premium") return users.filter(u => u.isPremium);
-    if (filter === "free") return users.filter(u => !u.isPremium);
-    return users;
-  }, [filter, users]);
+  const userChartData = Object.keys(usersByMonth).map(m => ({
+    month: m,
+    users: usersByMonth[m]
+  }));
 
   return (
-    <div className="p-6 space-y-8 bg-[#f7f7f8] min-h-screen">
+    <div className="space-y-10">
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Stat title="Total Users" value={users.length} />
-        <Stat title="Premium Users" value={premiumUsers.length} accent />
-        <Stat title="Free Users" value={users.length - premiumUsers.length} />
+    
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        <StatCard
+          title="Total Users"
+          value={users.length}
+          subtitle="All registered users"
+          to="/admin/users"
+          gradient="from-indigo-400 to-indigo-600"
+        />
+
+        <StatCard
+          title="Premium Users"
+          value={premiumUsers}
+          subtitle="Active subscriptions"
+          to="/admin/premium-users"
+          gradient="from-emerald-400 to-emerald-600"
+        />
+
+        <StatCard
+          title="Payments"
+          value={payments.length}
+          subtitle="Successful payments"
+          gradient="from-sky-400 to-sky-600"
+        />
+
+        <StatCard
+          title="Revenue"
+          value={`₹${totalRevenue}`}
+          subtitle="Total earnings"
+          gradient="from-amber-400 to-amber-600"
+        />
       </div>
 
-      <div className="bg-white rounded-2xl p-4 border shadow-sm">
-        <div className="text-lg font-semibold mb-3 text-gray-900">
-          Users Growth (Monthly)
+    
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+
+        <div className="bg-white rounded-3xl p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            User Growth
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Monthly new users
+          </p>
+
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={userChartData}>
+                <defs>
+                  <linearGradient id="userFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366F1" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="#6366F1" stopOpacity={0.05} />
+                  </linearGradient>
+                </defs>
+
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis dataKey="month" />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Area
+                  dataKey="users"
+                  type="monotone"
+                  stroke="#6366F1"
+                  fill="url(#userFill)"
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        <ResponsiveContainer width="100%" height={320}>
-          <BarChart data={chartData}>
-            <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 3" />
-            <XAxis dataKey="month" tick={{ fill: "#4b5563" }} />
-            <YAxis tick={{ fill: "#4b5563" }} />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="users" fill="#10b981" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="premium" fill="#8b5cf6" radius={[6, 6, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+        <div className="bg-white rounded-3xl p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            Revenue Growth
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Monthly earnings
+          </p>
 
-      <div className="flex gap-3">
-        <FilterBtn active={filter === "all"} onClick={() => setFilter("all")}>
-          All
-        </FilterBtn>
-        <FilterBtn active={filter === "premium"} onClick={() => setFilter("premium")}>
-          Premium
-        </FilterBtn>
-        <FilterBtn active={filter === "free"} onClick={() => setFilter("free")}>
-          Free
-        </FilterBtn>
-      </div>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={revenueData}>
+                <defs>
+                  <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10B981" stopOpacity={0.45} />
+                    <stop offset="100%" stopColor="#10B981" stopOpacity={0.05} />
+                  </linearGradient>
+                </defs>
 
-      <div className="bg-white rounded-2xl border shadow-sm overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600">
-            <tr>
-              <th className="p-3 text-left">Name</th>
-              <th className="p-3 text-left">Email</th>
-              <th className="p-3">Role</th>
-              <th className="p-3">Premium</th>
-              <th className="p-3">Updated</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.map(u => (
-              <tr key={u._id} className="border-t hover:bg-gray-50">
-                <td className="p-3">{u.name}</td>
-                <td className="p-3 text-gray-500">{u.email}</td>
-                <td className="p-3 text-center">{u.role}</td>
-                <td className="p-3 text-center">
-                  {u.isPremium ? (
-                    <span className="px-3 py-1 rounded-full text-xs bg-emerald-100 text-emerald-700">
-                      Yes
-                    </span>
-                  ) : (
-                    <span className="px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
-                      No
-                    </span>
-                  )}
-                </td>
-                <td className="p-3 text-gray-500">
-                  {new Date(u.updatedAt).toLocaleDateString()}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Area
+                  dataKey="revenue"
+                  type="monotone"
+                  stroke="#10B981"
+                  fill="url(#revFill)"
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
-    </div>
-  );
-}
-
-function Stat({ title, value, accent }) {
-  return (
-    <div className="bg-white rounded-2xl p-5 border shadow-sm">
-      <div className="text-sm text-gray-500">{title}</div>
-      <div className={`text-3xl font-bold ${accent ? "text-emerald-600" : "text-gray-900"}`}>
-        {value}
       </div>
     </div>
-  );
-}
-
-function FilterBtn({ children, active, ...props }) {
-  return (
-    <button
-      {...props}
-      className={`px-4 py-2 rounded-full text-sm font-medium transition
-        ${active
-          ? "bg-emerald-600 text-white"
-          : "bg-white border text-gray-700 hover:bg-gray-100"
-        }`}
-    >
-      {children}
-    </button>
   );
 }

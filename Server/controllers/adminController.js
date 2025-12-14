@@ -3,41 +3,52 @@ import { Album } from "../models/Album.js"
 import User from "../models/User.js"
 import cloudinary from "../config/cloudinary.js"
 
-const uploadToCloudinary = async (file) => {
-  try {
-    const result = await cloudinary.uploader.upload(file.tempFilePath, {
-      resource_type: "auto",
-    })
-    return result.secure_url
-  } catch (error) {
-    console.log("Error in uploadToCloudinary", error)
-    throw new Error("Error uploading to cloudinary")
+
+const uploadToCloudinary = async (file, folder) => {
+  if (!file?.tempFilePath) {
+    throw new Error("Invalid file")
   }
+
+  const result = await cloudinary.uploader.upload(
+    file.tempFilePath,
+    {
+      resource_type: "auto",
+      folder
+    }
+  )
+
+  return result.secure_url
 }
+
+export default uploadToCloudinary
+
+
+
+
 
 export const createSong = async (req, res, next) => {
   try {
-    if (!req.files || !req.files.audioFile) {
-      return res.status(400).json({ message: "Audio file is required" })
+    if (!req.files?.audioFile) {
+      return res.status(400).json({ message: "Audio file is required" });
     }
 
-    const { title, artist, albumId, genre, duration } = req.body
-    const audioFile = req.files.audioFile
-    const imageFile = req.files?.imageFile || null
+    const { title, artist, albumId, genre, duration } = req.body;
 
-    if (!title) {
-      return res.status(400).json({ message: "Title is required" })
+    if (!title || !albumId) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
-    if (!albumId) {
-      return res.status(400).json({ message: "Album is required" })
-    }
+    const audioUrl = await uploadToCloudinary(
+      req.files.audioFile,
+      "dotin/songs/audio"
+    );
 
-    const audioUrl = await uploadToCloudinary(audioFile)
-    let coverUrl
-
-    if (imageFile) {
-      coverUrl = await uploadToCloudinary(imageFile)
+    let coverUrl;
+    if (req.files?.imageFile) {
+      coverUrl = await uploadToCloudinary(
+        req.files.imageFile,
+        "dotin/songs/covers"
+      );
     }
 
     const song = new Song({
@@ -45,23 +56,24 @@ export const createSong = async (req, res, next) => {
       artist,
       album: albumId,
       genre: genre || "Unknown",
-      coverUrl,
       duration,
       audioUrl,
-    })
+      coverUrl
+    });
 
-    await song.save()
+    await song.save();
 
     await Album.findByIdAndUpdate(albumId, {
-      $push: { songs: song._id },
-    })
+      $push: { songs: song._id }
+    });
 
-    res.status(201).json(song)
-  } catch (error) {
-    console.log("Error in createSong", error)
-    next(error)
+    res.status(201).json(song);
+  } catch (err) {
+    next(err);
   }
-}
+};
+
+
 // export const createSong = async (req, res, next) => {
 //   try {
 //     const { title, artist, albumId, genre, duration, audioUrl, coverUrl } = req.body

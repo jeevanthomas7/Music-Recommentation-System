@@ -5,7 +5,6 @@ import fileUpload from "express-fileupload";
 
 import cors from "cors";
 import { connectDB } from "./config/db.js";
-// import cloudinary from "./config/cloudinary.js";
 import albumRoutes from "./routes/albumRoutes.js";
 import songRoutes from "./routes/songRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -36,12 +35,16 @@ app.use(
   })
 );
 
+
 app.use(
   fileUpload({
     useTempFiles: true,
-    tempFileDir: "/tmp/"
+    tempFileDir: "./tmp"
   })
 );
+
+
+
 app.use(express.json());
 app.use(cookieParser());
 
@@ -60,6 +63,10 @@ app.use("/api/search", searchRoutes);
 app.use("/api/emotion", emotionRoutes);
 
 
+app.use((err, req, res, next) => {
+  console.error("GLOBAL ERROR:", err);
+  res.status(500).json({ message: err.message || "Server error" });
+});
 
 
 app.listen(PORT, () => {

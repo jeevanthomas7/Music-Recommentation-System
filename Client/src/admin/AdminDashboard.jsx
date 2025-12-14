@@ -1,24 +1,20 @@
-import { Routes, Route } from "react-router-dom";
-import AdminSidebar from "./components/AdminSidebar";
-import AdminHeader from "./components/AdminHeader";
+import { Routes, Route, Navigate } from "react-router-dom";
+import AdminLayout from "./components/AdminLayout";
 import Dashboard from "./pages/Dashboard";
+import Users from "./pages/Users";
 import Songs from "./pages/Songs";
 import Albums from "./pages/Albums";
 
 export default function AdminDashboard() {
   return (
-    <div className="min-h-screen bg-[#f7f7f8] flex">
-      <AdminSidebar />
-      <div className="flex-1 flex flex-col">
-        <AdminHeader />
-        <main className="p-6">
-          <Routes>
-            <Route index element={<Dashboard />} />
-            <Route path="Addsong" element={<Songs />} />
-            <Route path="albums" element={<Albums />} />
-          </Routes>
-        </main>
-      </div>
-    </div>
+    <AdminLayout>
+      <Routes>
+        <Route index element={<Dashboard />} />
+        <Route path="users" element={<Users />} />
+        <Route path="songs" element={<Songs />} />
+        <Route path="albums" element={<Albums />} />
+        <Route path="*" element={<Navigate to="/admin" />} />
+      </Routes>
+    </AdminLayout>
   );
 }

@@ -1,52 +1,119 @@
 import { useEffect, useState } from "react";
 import API from "../../api/api";
+import AlbumForm from "../components/AlbumForm";
 
 export default function Albums() {
   const [albums, setAlbums] = useState([]);
-  const [title, setTitle] = useState("");
-  const [artist, setArtist] = useState("");
-  const [image, setImage] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const [confirmId, setConfirmId] = useState(null);
+  const [success, setSuccess] = useState("");
+
+  const load = async () => {
+    const res = await API.get("/albums");
+    setAlbums(res.data || []);
+  };
 
   useEffect(() => {
-    API.get("/albums").then(r => setAlbums(r.data));
+    load();
   }, []);
 
-  async function upload(e) {
-    e.preventDefault();
-    const fd = new FormData();
-    fd.append("title", title);
-    fd.append("artist", artist);
-    if (image) fd.append("imageFile", image);
-
-    await API.post("/admin/albums", fd);
-    const res = await API.get("/albums");
-    setAlbums(res.data);
-  }
-
-  async function remove(id) {
-    await API.delete(`/admin/albums/${id}`);
-    setAlbums(a => a.filter(x => x._id !== id));
+  async function removeAlbum() {
+    await API.delete(`/admin/albums/${confirmId}`);
+    setConfirmId(null);
+    setSuccess("Album deleted successfully");
+    load();
+    setTimeout(() => setSuccess(""), 3000);
   }
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={upload} className="bg-white p-4 rounded-xl border space-y-3">
-        <input className="border px-3 py-2 w-full" placeholder="Album Title" onChange={e => setTitle(e.target.value)} />
-        <input className="border px-3 py-2 w-full" placeholder="Artist" onChange={e => setArtist(e.target.value)} />
-        <input type="file" onChange={e => setImage(e.target.files[0])} />
-        <button className="bg-black text-white px-4 py-2 rounded">Create Album</button>
-      </form>
+    <div className="space-y-8">
 
-      <div className="bg-white rounded-xl border">
+      <AlbumForm
+        editData={editing}
+        onSaved={() => {
+          setEditing(null);
+          load();
+          setSuccess("Album saved successfully");
+          setTimeout(() => setSuccess(""), 3000);
+        }}
+      />
+
+      {success && (
+        <div className="rounded-xl bg-emerald-50 text-emerald-700 px-4 py-3 font-medium">
+          {success}
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl border overflow-hidden">
         {albums.map(a => (
-          <div key={a._id} className="flex justify-between px-4 py-2 border-b">
-            <div>{a.title}</div>
-            <button onClick={() => remove(a._id)} className="text-red-600">
-              Delete
-            </button>
+          <div
+            key={a._id}
+            className="flex items-center justify-between gap-4 p-4 border-b hover:bg-gray-50"
+          >
+            <div className="flex items-center gap-4">
+              <img
+                src={a.coverUrl || "/placeholder.png"}
+                className="w-14 h-14 rounded-lg object-cover bg-gray-100"
+              />
+
+              <div>
+                <div className="font-semibold text-gray-900">
+                  {a.title}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {a.artist}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEditing(a)}
+                className="text-sm px-4 py-2 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
+              >
+                Edit
+              </button>
+
+              <button
+                onClick={() => setConfirmId(a._id)}
+                className="text-sm px-4 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         ))}
       </div>
+
+      {confirmId && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Delete album?
+            </h3>
+            <p className="text-sm text-gray-600 mt-2">
+              Are you sure you want to delete this album? This action cannot be undone.
+            </p>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setConfirmId(null)}
+                className="px-4 py-2 rounded-lg border text-gray-600"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={removeAlbum}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
