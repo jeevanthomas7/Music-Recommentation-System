@@ -10,20 +10,20 @@ import AdminDashboard from "./admin/AdminDashboard";
 import ProtectedAdminRoute from "./admin/ProtectedAdminRoute";
 
 import ProtectedRoute from "../routes/ProtectedRoute";
-import Search from "./pages/search";
+// import Search from "./pages/search";
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout><Home /></Layout>} />
-      <Route
+      {/* <Route
   path="/search"
   element={
     <Layout>
       <Search/>
     </Layout>
   }
-/>
+/> */}
 
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
