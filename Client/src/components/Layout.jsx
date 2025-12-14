@@ -46,15 +46,17 @@ export default function Layout({ children }) {
       <Header initialUser={user} />
       <Sidebar user={user} onPlay={handlePlay} />
 
-      <main className="ml-0 md:ml-80 pt-8 pb-24">
 
+      <main className="pt-16 pb-20 ml-0 md:ml-80">
         <div className="max-w-[1600px] mx-auto px-6">
           {React.cloneElement(children, {
             setQueue: setPlaylist,
             setCurrentIndex
           })}
-          <Footer />
         </div>
+
+        
+        <Footer />
       </main>
 
       <PlayerBar

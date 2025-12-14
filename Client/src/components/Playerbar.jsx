@@ -44,14 +44,13 @@ export default function PlayerBar({ playlist = [], initialIndex = 0 }) {
 
   const current = playlist.length ? playlist[index] : null;
 
-  /* 🔥 FIX 1: RESET INDEX WHEN PLAYLIST CHANGES */
   useEffect(() => {
     if (!playlist.length) return;
     const safeIndex = Math.min(initialIndex, playlist.length - 1);
     setIndex(safeIndex);
   }, [playlist, initialIndex]);
 
-  /* 🔥 FIX 2: FORCE AUDIO LOAD */
+
   useEffect(() => {
     if (!current?.url || !audioRef.current) return;
 
@@ -176,7 +175,7 @@ export default function PlayerBar({ playlist = [], initialIndex = 0 }) {
   return (
     <>
      
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-cyan-50 border-t border-gray-200">
         <div className="h-20 px-6 flex items-center gap-4">
 
        
@@ -231,6 +230,7 @@ export default function PlayerBar({ playlist = [], initialIndex = 0 }) {
               <span>{format(duration)}</span>
             </div>
           </div>
+          
 
 
           <div className="hidden md:flex items-center gap-3 w-[240px] justify-end">
@@ -297,6 +297,7 @@ export default function PlayerBar({ playlist = [], initialIndex = 0 }) {
               />
               <button className="bg-black text-white px-3 rounded">Create</button>
             </form>
+            
 
             {playlists.map(pl => (
               <button
@@ -309,6 +310,7 @@ export default function PlayerBar({ playlist = [], initialIndex = 0 }) {
             ))}
           </div>
         </div>
+        
       )}
     </>
   );

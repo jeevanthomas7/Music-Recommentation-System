@@ -9,14 +9,41 @@ import Unauthorized from "./pages/Unauthorized";
 import AdminDashboard from "./admin/AdminDashboard";
 import ProtectedAdminRoute from "./admin/ProtectedAdminRoute";
 
+import ProtectedRoute from "../routes/ProtectedRoute";
+import Search from "./pages/search";
+
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout><Home /></Layout>} />
+      <Route
+  path="/search"
+  element={
+    <Layout>
+      <Search/>
+    </Layout>
+  }
+/>
+
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
-      <Route path="/premium" element={<Premium />} />
-      <Route path="/camera" element={<AiCamera />} />
+<Route
+  path="/camera"
+  element={
+    <ProtectedRoute>
+      <AiCamera />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/premium"
+  element={
+    <ProtectedRoute>
+      <Premium />
+    </ProtectedRoute>
+  }
+/>
 
 
       <Route element={<ProtectedAdminRoute />}>
