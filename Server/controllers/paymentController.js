@@ -100,17 +100,22 @@ if (plan === "yearly") {
 };
 
 
-export const getMyPayments = async (req, res) => {
+export const me = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ message: "Not authenticated" });
-    const payments = await PremiumPayment.find({ userId }).sort({ createdAt: -1 }).lean();
-    return res.json({ payments });
+    const user = await User.findById(req.user.id).select(
+      "_id name email avatar role isPremium premiumPlan premiumExpiresAt"
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ user });
   } catch (err) {
-    console.error("getMyPayments error:", err);
-    return res.status(500).json({ message: "Failed to fetch payments" });
+    res.status(500).json({ message: "Failed to fetch user" });
   }
 };
+
 
 export const getAllPayments = async (req, res) => {
   try {
@@ -121,3 +126,5 @@ export const getAllPayments = async (req, res) => {
     return res.status(500).json({ message: "Failed to fetch payments" });
   }
 };
+
+

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { createOrder, verifyPayment } from "../api/paymentService";
 import { useNavigate } from "react-router-dom";
 
@@ -7,135 +7,113 @@ export default function Premium() {
   const [err, setErr] = useState("");
   const navigate = useNavigate();
 
-  function loadRazorpay() {
-    if (window.Razorpay) return Promise.resolve(true);
-    return new Promise((resolve, reject) => {
+  async function loadRazorpay() {
+    if (window.Razorpay) return true;
+    return new Promise((resolve) => {
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.onload = () => resolve(true);
-      script.onerror = () => reject(false);
       document.body.appendChild(script);
     });
   }
 
- async function handleBuy(plan) {
-  setLoading(true);
-  setErr("");
+  async function handleBuy(plan) {
+    setLoading(true);
+    setErr("");
 
-  try {
-    const token = localStorage.getItem("dotin_token");
-    if (!token) throw new Error("Login expired. Please login again");
+    try {
+      await loadRazorpay();
 
-    const raw = localStorage.getItem("dotin_user");
-    const user = raw ? JSON.parse(raw) : null;
-    const userId = user?.id || user?._id;
+      const amount = plan === "monthly" ? 99 : 249;
+      const order = await createOrder(amount, plan);
 
-    if (!userId) throw new Error("User not logged in");
-
-    await loadRazorpay();
-
-    const amount = plan === "monthly" ? 99 : 249;
-const data = await createOrder(amount, plan);
-
-
+      const user = JSON.parse(localStorage.getItem("dotin_user"));
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: data.amount,
+        amount: order.amount,
         currency: "INR",
         name: "Dot-In Premium",
-        description: plan === "monthly" ? "Monthly Subscription" : "Yearly Subscription",
-        order_id: data.orderId,
+        description: "Unlimited music streaming",
+        order_id: order.orderId,
 
-        handler: async (response) => {
-          try {
-          const payload = {
-  razorpay_order_id: response.razorpay_order_id,
-  razorpay_payment_id: response.razorpay_payment_id,
-  razorpay_signature: response.razorpay_signature,
-  plan,
-  amount
-};
-;
+        handler: async (res) => {
+          const data = await verifyPayment({
+            razorpay_order_id: res.razorpay_order_id,
+            razorpay_payment_id: res.razorpay_payment_id,
+            razorpay_signature: res.razorpay_signature,
+            plan,
+            amount
+          });
 
-            const res = await verifyPayment(payload);
-if (res?.user) {
-  const norm = {
-    id: res.user._id,
-    name: res.user.name,
-    email: res.user.email,
-    avatar: res.user.avatar || res.user.picture,
-    isPremium: true,
-    premiumPlan: res.user.premiumPlan,
-    premiumExpiresAt: res.user.premiumExpiresAt
-  };
-  console.log("VERIFY RESPONSE:", res);
-
-
-  localStorage.setItem("dotin_user", JSON.stringify(norm));
-
-  window.dispatchEvent(
-  new CustomEvent("dotin_user_updated", { detail: norm })
-);
-
-
-  navigate("/", { replace: true });
-}
-
-          } catch (error) {
-            console.error("Payment verify error:", error);
-            setErr("Verification failed");
+          if (data?.user) {
+            localStorage.setItem("dotin_user", JSON.stringify(data.user));
+            window.dispatchEvent(
+              new CustomEvent("dotin_user_updated", { detail: data.user })
+            );
+            navigate("/");
           }
         },
 
-        prefill: { name: user?.name, email: user?.email },
+        prefill: {
+          name: user?.name,
+          email: user?.email
+        },
+
         theme: { color: "#10B981" }
       };
 
       new window.Razorpay(options).open();
-    } catch (error) {
-      console.error(error);
-      setErr(error.message || "Payment error");
+    } catch (e) {
+      setErr(e.message || "Payment failed");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen px-6 py-10 bg-white">
-      <h1 className="text-3xl font-bold text-center mb-8">Go Premium</h1>
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 px-4 py-12">
+      <h1 className="text-3xl font-bold text-center mb-10">
+        Upgrade to Premium
+      </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-        <div className="p-6 rounded-2xl border border-gray-200 shadow bg-white">
-          <h2 className="text-xl font-semibold">Monthly Plan</h2>
-          <p className="text-3xl font-bold mt-3">₹99 <span className="text-sm text-gray-500">/month</span></p>
-
-          <button
-            disabled={loading}
-            onClick={() => handleBuy("monthly")}
-            className="mt-6 w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold"
+      <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
+        {[
+          { plan: "monthly", price: 99, label: "Monthly" },
+          { plan: "yearly", price: 249, label: "Yearly" }
+        ].map(p => (
+          <div
+            key={p.plan}
+            className="rounded-3xl border bg-white shadow-sm p-8 flex flex-col"
           >
-            {loading ? "Processing…" : "Buy Monthly"}
-          </button>
-        </div>
+            <h2 className="text-xl font-semibold">{p.label} Plan</h2>
+            <p className="text-4xl font-bold mt-4">
+              ₹{p.price}
+              <span className="text-sm text-gray-500">
+                /{p.plan === "monthly" ? "month" : "year"}
+              </span>
+            </p>
 
-        <div className="p-6 rounded-2xl border border-gray-200 shadow bg-white">
-          <h2 className="text-xl font-semibold">Yearly Plan</h2>
-          <p className="text-3xl font-bold mt-3">₹249 <span className="text-sm text-gray-500">/year</span></p>
+            <ul className="mt-6 space-y-2 text-sm text-gray-600">
+              <li>✔ Ad-free listening</li>
+              <li>✔ Unlimited skips</li>
+              <li>✔ High quality audio</li>
+            </ul>
 
-          <button
-            disabled={loading}
-            onClick={() => handleBuy("yearly")}
-            className="mt-6 w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold"
-          >
-            {loading ? "Processing…" : "Buy Yearly"}
-          </button>
-        </div>
-
+            <button
+              disabled={loading}
+              onClick={() => handleBuy(p.plan)}
+              className="mt-8 py-3 rounded-xl bg-emerald-500 text-white font-semibold hover:bg-emerald-600 transition"
+            >
+              {loading ? "Processing…" : "Get Premium"}
+            </button>
+          </div>
+        ))}
       </div>
 
-      {err && <p className="text-center text-red-500 mt-6">{err}</p>}
+      {err && (
+        <p className="text-center text-red-500 mt-6">{err}</p>
+      )}
     </div>
   );
 }

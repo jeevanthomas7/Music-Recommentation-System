@@ -32,10 +32,8 @@ useEffect(() => {
 }, []);
 
 
-
 useEffect(() => {
   const onPremiumUpdate = (e) => {
-    console.log("HEADER PREMIUM UPDATE:", e.detail);
     setUser(e.detail);
     localStorage.setItem("dotin_user", JSON.stringify(e.detail));
   };
@@ -45,17 +43,35 @@ useEffect(() => {
     window.removeEventListener("dotin_user_updated", onPremiumUpdate);
 }, []);
 
-
-
-  useEffect(() => {
-    const close = (e) => {
-      if (premiumRef.current && !premiumRef.current.contains(e.target)) {
-        setPremiumOpen(false);
+useEffect(() => {
+  async function syncUser() {
+    try {
+      const res = await fetchMe();
+      if (res?.user) {
+        setUser(res.user);
+        localStorage.setItem("dotin_user", JSON.stringify(res.user));
       }
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, []);
+    } catch (e) {
+      console.log("Auth sync failed");
+    }
+  }
+  syncUser();
+}, []);
+
+
+
+
+useEffect(() => {
+  const close = (e) => {
+    if (profileRef.current && !profileRef.current.contains(e.target)) {
+      setProfileOpen(false);
+    }
+  };
+  document.addEventListener("mousedown", close);
+  return () => document.removeEventListener("mousedown", close);
+}, []);
+
+
 
   const go = (p) => navigate(p);
 

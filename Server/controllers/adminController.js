@@ -261,3 +261,17 @@ export const getUsers = async (req, res, next) => {
     next(error)
   }
 }
+
+export const getPremiumUsers = async (req, res, next) => {
+  try {
+    const users = await User.find(
+      { isPremium: true },
+      "name email premiumPlan premiumExpiresAt createdAt"
+    ).sort({ premiumExpiresAt: -1 });
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.log("Error in getPremiumUsers", error);
+    next(error);
+  }
+};

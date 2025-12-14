@@ -1,6 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+import fileUpload from "express-fileupload";
+
 import cors from "cors";
 import { connectDB } from "./config/db.js";
 // import cloudinary from "./config/cloudinary.js";
@@ -12,6 +14,8 @@ import paymentRoutes from "./routes/paymentRoute.js";
 import favoriteRoutes from "./routes/favoriteRoutes.js";
 import playlistRoutes from "./routes/playlistRoutes.js";
 import searchRoutes from "./routes/searchRoute.js";
+import emotionRoutes from "./routes/emotionRoutes.js";
+
 
 
 dotenv.config();
@@ -31,6 +35,13 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   })
 );
+
+app.use(
+  fileUpload({
+    useTempFiles: true,
+    tempFileDir: "/tmp/"
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 
@@ -46,6 +57,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/favorites", favoriteRoutes);
 app.use("/api/playlists", playlistRoutes);
 app.use("/api/search", searchRoutes);
+app.use("/api/emotion", emotionRoutes);
 
 
 

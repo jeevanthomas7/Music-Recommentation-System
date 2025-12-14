@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signin";
 import AdminDashboard from "./admin/AdminDashboard";
 import Premium from "./pages/Premium";
+import AiCamera from "./pages/AiCamera";
 
 function App() {
 
@@ -18,6 +19,7 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/premium" element={<Premium />} />
+        <Route path="/camera" element={<AiCamera />} />
         <Route path="*" element={<Layout><Home /></Layout>} />
       </Routes>
 
