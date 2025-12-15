@@ -39,11 +39,9 @@ app.use(
 app.use(
   fileUpload({
     useTempFiles: true,
-    tempFileDir: "./tmp"
+    tempFileDir: "/tmp"
   })
 );
-
-
 
 app.use(express.json());
 app.use(cookieParser());

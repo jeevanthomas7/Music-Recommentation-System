@@ -20,7 +20,6 @@ const uploadToCloudinary = async (file, folder) => {
   return result.secure_url
 }
 
-export default uploadToCloudinary
 
 
 
@@ -184,7 +183,7 @@ export const updateSong = async (req, res, next) => {
 export const createAlbum = async (req, res, next) => {
   try {
     const { title, artist, year, genre } = req.body
-    const imageFile = req.files?.imageFile || null
+    const imageFile = req.files?.imageFile
 
     if (!title || !artist) {
       return res.status(400).json({ message: "Title and artist are required" })
@@ -192,7 +191,10 @@ export const createAlbum = async (req, res, next) => {
 
     let coverUrl
     if (imageFile) {
-      coverUrl = await uploadToCloudinary(imageFile)
+      coverUrl = await uploadToCloudinary(
+        imageFile,
+        "dotin/albums/covers"
+      )
     }
 
     const album = new Album({
@@ -200,17 +202,16 @@ export const createAlbum = async (req, res, next) => {
       artist,
       year,
       genre,
-      coverUrl,
+      coverUrl
     })
 
     await album.save()
-
     res.status(201).json(album)
   } catch (error) {
-    console.log("Error in createAlbum", error)
     next(error)
   }
 }
+
 
 export const deleteAlbum = async (req, res, next) => {
   try {
