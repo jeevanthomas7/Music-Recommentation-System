@@ -52,7 +52,7 @@ function App() {
 
          <Route path="/unauthorized" element={<Unauthorized />} />
 
-      <Route path="*" element={<div className="p-20 text-center text-2xl">404 | Page Not Found</div>} />
+      <Route path="*" element={<div className="p-20 text-center text-red-500 text-2xl">404 | Page Not Found</div>} />
     </Routes>
   );
 }
