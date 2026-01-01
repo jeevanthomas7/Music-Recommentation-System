@@ -24,7 +24,7 @@ const PORT = process.env.PORT || 3000;
 
 connectDB();
 
-const FRONTEND_ORIGIN ='https://dot-in.vercel.app' || "http://localhost:5173";
+const FRONTEND_ORIGIN =process.env.FRONTEND_ORIGIN || "http://localhost:5173";
 
 app.use(
   cors({
