@@ -14,6 +14,45 @@ import {
 } from "react-icons/fi";
 import API from "../api/api.js";
 
+const iconBase =
+  "cursor-pointer transition text-gray-400 hover:text-black";
+
+function PlaylistCover({ songs = [] }) {
+  const covers = songs.filter(s => s?.coverUrl).slice(0, 4);
+
+  if (covers.length === 0) {
+    return (
+      <div className="w-9 h-9 bg-gray-200 rounded flex items-center justify-center">
+        <FiList className="text-gray-400" />
+      </div>
+    );
+  }
+
+  if (covers.length === 1) {
+    return (
+      <img src={covers[0].coverUrl} className="w-9 h-9 rounded object-cover" />
+    );
+  }
+
+  if (covers.length === 2) {
+    return (
+      <div className="w-9 h-9 flex rounded overflow-hidden">
+        {covers.map((s, i) => (
+          <img key={i} src={s.coverUrl} className="w-1/2 h-full object-cover" />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-9 h-9 grid grid-cols-2 grid-rows-2 rounded overflow-hidden">
+      {covers.map((s, i) => (
+        <img key={i} src={s.coverUrl} className="w-full h-full object-cover" />
+      ))}
+    </div>
+  );
+}
+
 export default function PlayerBar({ playlist = [], initialIndex = 0 }) {
   const audioRef = useRef(null);
 
@@ -41,15 +80,12 @@ export default function PlayerBar({ playlist = [], initialIndex = 0 }) {
   }, []);
 
   const userId = user?.id;
-
   const current = playlist.length ? playlist[index] : null;
 
   useEffect(() => {
     if (!playlist.length) return;
-    const safeIndex = Math.min(initialIndex, playlist.length - 1);
-    setIndex(safeIndex);
+    setIndex(Math.min(initialIndex, playlist.length - 1));
   }, [playlist, initialIndex]);
-
 
   useEffect(() => {
     if (!current?.url || !audioRef.current) return;
@@ -100,9 +136,17 @@ export default function PlayerBar({ playlist = [], initialIndex = 0 }) {
 
   function next() {
     if (!playlist.length) return;
+
     if (shuffle) {
-      setIndex(Math.floor(Math.random() * playlist.length));
-    } else if (index < playlist.length - 1) {
+      let nextIndex = index;
+      while (playlist.length > 1 && nextIndex === index) {
+        nextIndex = Math.floor(Math.random() * playlist.length);
+      }
+      setIndex(nextIndex);
+      return;
+    }
+
+    if (index < playlist.length - 1) {
       setIndex(index + 1);
     } else if (loop) {
       setIndex(0);
@@ -142,7 +186,6 @@ export default function PlayerBar({ playlist = [], initialIndex = 0 }) {
       songId: current.id
     });
     setShowAdd(false);
-    window.dispatchEvent(new Event("dotin_playlists_changed"));
   }
 
   async function createAndAdd(e) {
@@ -162,7 +205,6 @@ export default function PlayerBar({ playlist = [], initialIndex = 0 }) {
     setNewPlaylist("");
     setShowAdd(false);
     loadPlaylists();
-    window.dispatchEvent(new Event("dotin_playlists_changed"));
   }
 
   function format(t) {
@@ -174,13 +216,11 @@ export default function PlayerBar({ playlist = [], initialIndex = 0 }) {
 
   return (
     <>
-     
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-cyan-50 border-t border-gray-200">
-        <div className="h-20 px-6 flex items-center gap-4">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-cyan-50">
+        <div className="h-20 px-4 flex items-center gap-4">
 
-       
-          <div className="hidden md:flex items-center gap-3 w-[320px]">
-            <img src={current?.cover} className="w-14 h-14 rounded bg-gray-200 object-cover" />
+          <div className="hidden sm:flex items-center gap-3 w-[320px]">
+            <img src={current?.cover} className="w-14 h-14 rounded object-cover bg-gray-200" />
             <div className="min-w-0">
               <div className="text-sm font-semibold truncate">
                 {current?.title || "Not playing"}
@@ -190,28 +230,48 @@ export default function PlayerBar({ playlist = [], initialIndex = 0 }) {
               </div>
             </div>
 
-            <FiHeart
-              onClick={toggleFavourite}
-              className={`cursor-pointer ${
-                favourites[current?.id] ? "text-pink-500" : "text-gray-400"
-              }`}
-            />
+            <div className="relative group">
+              <FiHeart
+                onClick={toggleFavourite}
+                className={favourites[current?.id] ? "text-pink-500 cursor-pointer" : iconBase}
+              />
+              <span className="tooltip">Favourite</span>
+            </div>
 
-            <FiPlus
-              onClick={() => setShowAdd(true)}
-              className="cursor-pointer text-gray-400 hover:text-black"
-            />
+            <div className="relative group">
+              <FiPlus onClick={() => setShowAdd(true)} className={iconBase} />
+              <span className="tooltip">Add to playlist</span>
+            </div>
           </div>
 
           <div className="flex-1 flex flex-col items-center">
             <div className="flex items-center gap-4">
-              <FiShuffle onClick={() => setShuffle(!shuffle)} className={shuffle ? "text-green-500" : "text-gray-400"} />
-              <FiSkipBack onClick={prev} />
-              <button onClick={togglePlay} className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center">
+              <div className="relative group">
+                <FiShuffle
+                  onClick={() => setShuffle(!shuffle)}
+                  className={shuffle ? "text-green-500 cursor-pointer" : iconBase}
+                />
+                <span className="tooltip">Shuffle Play</span>
+              </div>
+
+              <FiSkipBack onClick={prev} className="cursor-pointer" />
+
+              <button
+                onClick={togglePlay}
+                className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center"
+              >
                 {isPlaying ? <FiPause /> : <FiPlay />}
               </button>
-              <FiSkipForward onClick={next} />
-              <FiRepeat onClick={() => setLoop(!loop)} className={loop ? "text-green-500" : "text-gray-400"} />
+
+              <FiSkipForward onClick={next} className="cursor-pointer" />
+
+              <div className="relative group">
+                <FiRepeat
+                  onClick={() => setLoop(!loop)}
+                  className={loop ? "text-green-500 cursor-pointer" : iconBase}
+                />
+                <span className="tooltip">Repeat</span>
+              </div>
             </div>
 
             <div className="flex items-center gap-2 w-full max-w-xl text-xs mt-1">
@@ -221,50 +281,50 @@ export default function PlayerBar({ playlist = [], initialIndex = 0 }) {
                 min="0"
                 max="100"
                 value={progress}
-                onChange={e => {
-                  audioRef.current.currentTime =
-                    duration * (e.target.value / 100);
-                }}
+                onChange={e =>
+                  (audioRef.current.currentTime =
+                    duration * (e.target.value / 100))
+                }
                 className="flex-1"
               />
               <span>{format(duration)}</span>
             </div>
           </div>
-          
 
+          <div className="hidden sm:flex items-center gap-3 w-[220px] justify-end">
+            <div className="relative group">
+              <FiList onClick={() => setShowQueue(true)} className={iconBase} />
+              <span className="tooltip">Queue</span>
+            </div>
 
-          <div className="hidden md:flex items-center gap-3 w-[240px] justify-end">
-            <FiList onClick={() => setShowQueue(true)} />
             <FiVolume2 />
-            <input type="range" min="0" max="1" step="0.01" value={volume} onChange={e => setVolume(e.target.value)} />
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={volume}
+              onChange={e => setVolume(e.target.value)}
+            />
           </div>
         </div>
       </div>
 
-      <audio
-        ref={audioRef}
-        onTimeUpdate={() => {
-          setCurrentTime(audioRef.current.currentTime);
-          setDuration(audioRef.current.duration || 0);
-          setProgress(
-            (audioRef.current.currentTime / audioRef.current.duration) * 100 || 0
-          );
-        }}
-        onEnded={next}
-      />
-
-     
       {showQueue && (
-        <div className="fixed right-6 bottom-24 z-50 w-80 bg-white rounded-xl shadow-lg border">
+        <div className="fixed right-4 bottom-24 z-50 w-80 bg-white rounded-xl shadow-lg border">
           <div className="flex items-center justify-between p-3 border-b">
             <div className="font-semibold">Queue</div>
             <FiX className="cursor-pointer" onClick={() => setShowQueue(false)} />
           </div>
+
           <div className="max-h-64 overflow-y-auto">
             {playlist.map((s, i) => (
               <div
                 key={s.id}
-                onClick={() => setIndex(i)}
+                onClick={() => {
+                  setIndex(i);
+                  setShowQueue(false);
+                }}
                 className={`flex items-center gap-3 px-3 py-2 cursor-pointer ${
                   i === index ? "bg-gray-100" : "hover:bg-gray-50"
                 }`}
@@ -297,21 +357,59 @@ export default function PlayerBar({ playlist = [], initialIndex = 0 }) {
               />
               <button className="bg-black text-white px-3 rounded">Create</button>
             </form>
-            
 
             {playlists.map(pl => (
               <button
                 key={pl._id}
                 onClick={() => addToPlaylist(pl._id)}
-                className="w-full text-left px-2 py-2 rounded hover:bg-gray-100 text-sm"
+                className="w-full flex items-center gap-3 px-2 py-2 rounded hover:bg-gray-100 text-sm"
               >
-                {pl.name}
+                <PlaylistCover songs={pl.songs} />
+                <span className="truncate">{pl.name}</span>
               </button>
             ))}
           </div>
         </div>
-        
       )}
+
+      <audio
+        ref={audioRef}
+        onTimeUpdate={() => {
+          setCurrentTime(audioRef.current.currentTime);
+          setDuration(audioRef.current.duration || 0);
+          setProgress(
+            (audioRef.current.currentTime / audioRef.current.duration) * 100 || 0
+          );
+        }}
+        onEnded={() => {
+          if (loop) {
+            audioRef.current.currentTime = 0;
+            audioRef.current.play();
+          } else {
+            next();
+          }
+        }}
+      />
+
+      <style>{`
+        .tooltip {
+          position: absolute;
+          top: -28px;
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: 12px;
+          background: black;
+          color: white;
+          padding: 2px 6px;
+          border-radius: 4px;
+          opacity: 0;
+          pointer-events: none;
+          white-space: nowrap;
+        }
+        .group:hover .tooltip {
+          opacity: 1;
+        }
+      `}</style>
     </>
   );
 }

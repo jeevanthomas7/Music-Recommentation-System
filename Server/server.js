@@ -12,7 +12,7 @@ import adminRoutes from "./routes/adminRoute.js";
 import paymentRoutes from "./routes/paymentRoute.js";
 import favoriteRoutes from "./routes/favoriteRoutes.js";
 import playlistRoutes from "./routes/playlistRoutes.js";
-import searchRoutes from "./routes/searchRoute.js";
+
 import emotionRoutes from "./routes/emotionRoutes.js";
 
 
@@ -57,7 +57,6 @@ app.use("/api/admin", adminRoutes)
 app.use("/api/payments", paymentRoutes);
 app.use("/api/favorites", favoriteRoutes);
 app.use("/api/playlists", playlistRoutes);
-app.use("/api/search", searchRoutes);
 app.use("/api/emotion", emotionRoutes);
 
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { FiHeart, FiMusic, FiTrash2, FiX } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 import API from "../api/api";
 
 function normalizeSong(s) {
@@ -13,14 +14,61 @@ function normalizeSong(s) {
   };
 }
 
+function PlaylistPreview({ songs = [] }) {
+  const covers = songs.filter(s => s?.coverUrl).slice(0, 4);
+
+  if (covers.length === 0) {
+    return (
+      <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-md">
+        <FiMusic className="text-gray-500" />
+      </div>
+    );
+  }
+
+  if (covers.length === 1) {
+    return (
+      <img
+        src={covers[0].coverUrl}
+        className="w-10 h-10 rounded-md object-cover"
+      />
+    );
+  }
+
+  if (covers.length === 2) {
+    return (
+      <div className="w-10 h-10 flex rounded-md overflow-hidden">
+        {covers.map((s, i) => (
+          <img
+            key={i}
+            src={s.coverUrl}
+            className="w-1/2 h-full object-cover"
+          />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-10 h-10 grid grid-cols-2 grid-rows-2 rounded-md overflow-hidden">
+      {covers.map((s, i) => (
+        <img
+          key={i}
+          src={s.coverUrl}
+          className="w-full h-full object-cover"
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function Sidebar({ user, onPlay }) {
   const [favourites, setFavourites] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const [openPlaylist, setOpenPlaylist] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-
   const [confirm, setConfirm] = useState(null);
 
+  const navigate = useNavigate();
   const userId = user?.id;
 
   useEffect(() => {
@@ -67,7 +115,7 @@ export default function Sidebar({ user, onPlay }) {
   }
 
   const SidebarContent = (
-    <div className="h-full bg-[#f9f9fb] rounded-2xl shadow-md border border-gray-100 flex flex-col overflow-hidden">
+    <div className="h-full bg-[#f9f9fb] rounded-none md:rounded-2xl shadow-md border-r md:border border-gray-100 flex flex-col overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
         <h2 className="text-lg font-bold text-gray-900">Your Library</h2>
         <button className="md:hidden" onClick={() => setMobileOpen(false)}>
@@ -77,21 +125,27 @@ export default function Sidebar({ user, onPlay }) {
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center gap-2 text-sm font-semibold mb-3 text-gray-800">
-            <FiHeart className="text-pink-500" />
-            Favourites
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+              Favourites
+              <FiHeart className="text-pink-500" />
+            </div>
+            {favourites.length > 1 && (
+              <button
+                onClick={() => navigate("/favorites")}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                View all
+              </button>
+            )}
           </div>
 
-          {favourites.length === 0 && (
-            <div className="text-xs text-gray-400">No favourites yet</div>
-          )}
-
           <div className="space-y-1">
-            {favourites.map(f => (
+            {favourites.slice(-3).map(f => (
               <div
                 key={f._id}
-                className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100"
+                className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-gray-100"
               >
                 <div
                   onClick={() => onPlay?.([normalizeSong(f.songId)], 0)}
@@ -99,9 +153,9 @@ export default function Sidebar({ user, onPlay }) {
                 >
                   <img
                     src={f.songId?.coverUrl}
-                    className="w-8 h-8 rounded object-cover bg-gray-200"
+                    className="w-7 h-6 rounded object-cover bg-gray-200"
                   />
-                  <span className="truncate text-sm text-gray-700 hover:text-black">
+                  <span className="truncate text-sm text-gray-700">
                     {f.songId?.title}
                   </span>
                 </div>
@@ -126,13 +180,23 @@ export default function Sidebar({ user, onPlay }) {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center gap-2 text-sm font-semibold mb-3 text-gray-800">
-            <FiMusic />
-            Playlists
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+              Playlists
+             <FiMusic className="text-gray-500" />
+            </div>
+            {playlists.length > 1 && (
+              <button
+                onClick={() => navigate("/playlists")}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                View all
+              </button>
+            )}
           </div>
 
-          {playlists.map(pl => (
+          {playlists.slice(-3).map(pl => (
             <div key={pl._id} className="mb-2">
               <div
                 onClick={() =>
@@ -140,9 +204,12 @@ export default function Sidebar({ user, onPlay }) {
                 }
                 className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-gray-100 cursor-pointer"
               >
-                <span className="truncate text-sm text-gray-700">
-                  {pl.name}
-                </span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <PlaylistPreview songs={pl.songs} />
+                  <span className="truncate text-sm text-gray-700">
+                    {pl.name}
+                  </span>
+                </div>
 
                 <FiTrash2
                   onClick={(e) => {
@@ -151,9 +218,7 @@ export default function Sidebar({ user, onPlay }) {
                       `Delete playlist "${pl.name}"?`,
                       async () => {
                         await API.delete(`/playlists/${pl._id}`);
-                        window.dispatchEvent(
-                          new Event("dotin_playlists_changed")
-                        );
+                        window.dispatchEvent(new Event("dotin_playlists_changed"));
                       }
                     );
                   }}
@@ -166,7 +231,7 @@ export default function Sidebar({ user, onPlay }) {
                   {pl.songs.map((s, i) => (
                     <div
                       key={s._id}
-                      className="flex items-center justify-between gap-2 px-2 py-1 rounded hover:bg-gray-100"
+                      className="flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100"
                     >
                       <div
                         onClick={() =>
@@ -176,9 +241,9 @@ export default function Sidebar({ user, onPlay }) {
                       >
                         <img
                           src={s.coverUrl}
-                          className="w-7 h-7 rounded object-cover bg-gray-200"
+                          className="w-6 h-6 rounded object-cover bg-gray-200"
                         />
-                        <span className="truncate text-xs text-gray-600 hover:text-black">
+                        <span className="truncate text-xs text-gray-600">
                           {s.title}
                         </span>
                       </div>
@@ -192,9 +257,7 @@ export default function Sidebar({ user, onPlay }) {
                                 playlistId: pl._id,
                                 songId: s._id
                               });
-                              window.dispatchEvent(
-                                new Event("dotin_playlists_changed")
-                              );
+                              window.dispatchEvent(new Event("dotin_playlists_changed"));
                             }
                           )
                         }
@@ -214,7 +277,7 @@ export default function Sidebar({ user, onPlay }) {
 
   return (
     <>
-      <aside className="fixed top-16 bottom-20 left-0 w-80 hidden md:block">
+      <aside className="fixed top-16 bottom-20 left-0 w-80 hidden md:block z-30">
         {SidebarContent}
       </aside>
 

@@ -47,7 +47,7 @@ export default function Layout({ children }) {
       <Sidebar user={user} onPlay={handlePlay} />
 
 
-      <main className="pt-16 pb-20 ml-0 md:ml-80">
+      <main className="pt-2  pb-20 ml-0 md:ml-80">
         <div className="max-w-[1600px] mx-auto px-6">
           {React.cloneElement(children, {
             setQueue: setPlaylist,
